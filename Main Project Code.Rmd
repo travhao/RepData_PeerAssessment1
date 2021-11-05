@@ -1,0 +1,138 @@
+---
+title: "Main Project Code"
+author: "Travis Helm"
+date: "11/3/2021"
+output: html_document
+---
+
+# Peer Graded Assignment 1
+
+## Loading and Processing Data (NOTE:  I saved in my folder unzipped).
+
+I'm adding a weekend/weekdy column
+
+```{r read_csv, echo=TRUE}
+library(dplyr)
+
+activity <- read.csv('activity.csv') 
+
+activity <- activity %>% 
+  mutate(date = as.Date(activity$date, "%Y-%m-%d"),
+         Date_Type = if_else(weekdays(date) %in% c('Saturday','Sunday'), 'weekend','weekday'),
+         Weekday = weekdays(date))
+head(activity)
+```
+
+## What is mean total number of steps taken per day?
+
+### Create Histogram
+
+I group by date and then get the total number of steps
+
+```{r Daily Steps, echo=TRUE}
+library(ggplot2)
+Total_Daily_Steps <- activity %>% 
+  group_by(date) %>% 
+  summarise(Total_Steps = sum(steps, na.rm=TRUE)) %>% 
+  ungroup()
+
+ggplot(data=Total_Daily_Steps, aes(x=Total_Steps)) +
+  geom_histogram() +
+  labs(x='Total Daily Steps')
+
+
+```
+
+
+### Summary statistics (including the mean and median) are shown below.  
+
+```{r Mean Median, echo=TRUE}
+summary(Total_Daily_Steps$Total_Steps)
+
+
+```
+
+## What is the average daily activity pattern?
+
+I group by interval and get the total number of steps
+
+```{r Time Series Plot}
+
+Ave_Steps <- activity %>% 
+  group_by(interval) %>% 
+  summarise(Ave_Steps = mean(steps, na.rm=TRUE)) %>% 
+  ungroup() 
+
+library(lattice)
+xyplot(Ave_Steps ~ interval, data = Ave_Steps, type = c("l"))
+
+
+```
+
+
+### What five minute interval contains the most steps?
+
+Interval 835 (see below)
+
+```{r Most number of steps}
+
+max_interval <- Ave_Steps[Ave_Steps$Ave_Steps == max(Ave_Steps$Ave_Steps),]
+max_interval
+
+```
+
+## Imputing Missing Values
+There are 2304 missing cases
+
+```{r complete cases, echo=FALSE}
+  sum(!complete.cases(activity))
+```
+
+### Creating Dataset to replace missing values with average for interval
+
+I create a column called steps_noNA that has the average steps for an interval
+when the steps for that day aren't actually known
+
+```{r Activity2}
+
+activity2 <- activity %>% 
+  left_join(Ave_Steps, by = 'interval') %>% 
+  mutate(steps_noNA = ifelse(is.na(steps), Ave_Steps, steps))
+```
+
+### Histogram with corrected values
+
+```{r histogram2}
+Total_Daily_Steps2 <- activity2 %>% 
+  group_by(date) %>% 
+  summarise(Total_StepsNA = sum(steps, na.rm=TRUE),
+            Total_StepsNoNA = sum(steps_noNA)) %>% 
+  ungroup()
+
+```
+
+### Mean and Median with and without NAs
+
+The mean and median are lower when missing values are present
+
+```{r Mean and Median NA and not}
+
+summary(Total_Daily_Steps2[,c('Total_StepsNA','Total_StepsNoNA')])
+```
+
+##Plotting by weekend/weekday
+
+```{r weekend weekday, echo=FALSE}
+
+
+
+Ave_Steps_Interval <- activity %>% 
+  group_by(interval, Date_Type) %>% 
+  summarise(Ave_Steps = mean(steps, na.rm=TRUE)) %>% 
+  ungroup() %>% 
+  mutate(Date_Type = as.factor(Date_Type))
+
+qplot(interval, Ave_Steps, data=Ave_Steps_Interval, geom=c("line"), facets = Date_Type~., ylab = 'Number of Steps')
+
+
+```
