@@ -13,9 +13,29 @@ output:
 
 I'm adding a weekend/weekdy column
 
-```{r read_csv, echo=TRUE}
-library(dplyr)
 
+```r
+library(dplyr)
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+```
+
+```
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
 activity <- read.csv('activity.csv') 
 
 activity <- activity %>% 
@@ -31,7 +51,8 @@ head(activity)
 
 I group by date and then get the total number of steps
 
-```{r Daily Steps, echo=TRUE}
+
+```r
 library(ggplot2)
 Total_Daily_Steps <- activity %>% 
   group_by(date) %>% 
@@ -41,25 +62,33 @@ Total_Daily_Steps <- activity %>%
 ggplot(data=Total_Daily_Steps, aes(x=Total_Steps)) +
   geom_histogram() +
   labs(x='Total Daily Steps')
-
+```
 
 ```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![plot of chunk Daily Steps](figure/Daily Steps-1.png)
 
 
 ### Summary statistics (including the mean and median) are shown below.  
 
-```{r Mean Median, echo=TRUE}
+
+```r
 summary(Total_Daily_Steps$Total_Steps)
+```
 
-
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0    6778   10395    9354   12811   21194
 ```
 
 ## What is the average daily activity pattern?
 
 I group by interval and get the total number of steps
 
-```{r Time Series Plot}
 
+```r
 Ave_Steps <- activity %>% 
   group_by(interval) %>% 
   summarise(Ave_Steps = mean(steps, na.rm=TRUE)) %>% 
@@ -67,27 +96,27 @@ Ave_Steps <- activity %>%
 
 library(lattice)
 xyplot(Ave_Steps ~ interval, data = Ave_Steps, type = c("l"))
-
-
 ```
+
+![plot of chunk Time Series Plot](figure/Time Series Plot-1.png)
 
 
 ### What five minute interval contains the most steps?
 
 Interval 835 (see below)
 
-```{r Most number of steps}
 
+```r
 max_interval <- Ave_Steps[Ave_Steps$Ave_Steps == max(Ave_Steps$Ave_Steps),]
 max_interval
-
 ```
 
 ## Imputing Missing Values
 There are 2304 missing cases
 
-```{r complete cases, echo=FALSE}
-  sum(!complete.cases(activity))
+
+```
+## [1] 2304
 ```
 
 ### Creating Dataset to replace missing values with average for interval
@@ -95,8 +124,8 @@ There are 2304 missing cases
 I create a column called steps_noNA that has the average steps for an interval
 when the steps for that day aren't actually known
 
-```{r Activity2}
 
+```r
 activity2 <- activity %>% 
   left_join(Ave_Steps, by = 'interval') %>% 
   mutate(steps_noNA = ifelse(is.na(steps), Ave_Steps, steps))
@@ -104,37 +133,39 @@ activity2 <- activity %>%
 
 ### Histogram with corrected values
 
-```{r histogram2}
+
+```r
 Total_Daily_Steps2 <- activity2 %>% 
   group_by(date) %>% 
   summarise(Total_StepsNA = sum(steps, na.rm=TRUE),
             Total_StepsNoNA = sum(steps_noNA)) %>% 
   ungroup()
-
 ```
 
 ### Mean and Median with and without NAs
 
 The mean and median are lower when missing values are present
 
-```{r Mean and Median NA and not}
 
+```r
 summary(Total_Daily_Steps2[,c('Total_StepsNA','Total_StepsNoNA')])
+```
+
+```
+##  Total_StepsNA   Total_StepsNoNA
+##  Min.   :    0   Min.   :   41  
+##  1st Qu.: 6778   1st Qu.: 9819  
+##  Median :10395   Median :10766  
+##  Mean   : 9354   Mean   :10766  
+##  3rd Qu.:12811   3rd Qu.:12811  
+##  Max.   :21194   Max.   :21194
 ```
 
 ##Plotting by weekend/weekday
 
-```{r weekend weekday, echo=FALSE}
-
-
-
-Ave_Steps_Interval <- activity %>% 
-  group_by(interval, Date_Type) %>% 
-  summarise(Ave_Steps = mean(steps, na.rm=TRUE)) %>% 
-  ungroup() %>% 
-  mutate(Date_Type = as.factor(Date_Type))
-
-qplot(interval, Ave_Steps, data=Ave_Steps_Interval, geom=c("line"), facets = Date_Type~., ylab = 'Number of Steps')
-
 
 ```
+## `summarise()` has grouped output by 'interval'. You can override using the `.groups` argument.
+```
+
+![plot of chunk weekend weekday](figure/weekend weekday-1.png)
